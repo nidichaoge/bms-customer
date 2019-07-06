@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.mouse.bms.customer.dal.dao.CustomerDAO">
+    <sql id="table">
+        bms_customer
+    </sql>
+
+    <sql id="column">
+        id, business_id, nick_name, mobile, gender, created_at, updated_at, deleted_at, description
+    </sql>
+
+    <resultMap id="customerDO" type="com.mouse.bms.customer.dal.dataobject.CustomerDO">
+        <result column="id" property="id"/>
+        <result column="business_id" property="businessId"/>
+        <result column="nick_name" property="nickName"/>
+        <result column="mobile" property="mobile"/>
+        <result column="gender" property="gender"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="deleted_at" property="deletedAt"/>
+        <result column="description" property="description"/>
+    </resultMap>
+
+    <select id="get" resultMap="customerDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </select>
+
+    <select id="getByMobile" resultMap="customerDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND mobile = #{mobile}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </select>
+
+    <insert id="insert" parameterType="com.mouse.bms.customer.dal.dataobject.CustomerDO" useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO
+        <include refid="table"/>
+        (
+        <if test="id > 0">
+            id,
+        </if>
+        business_id, nick_name, mobile,
+        <if test="gender != null">
+            gender,
+        </if>
+        created_at
+        <if test="description != null">
+            ,description
+        </if>
+        ) VALUES (
+        <if test="id > 0">
+            #{id},
+        </if>
+        #{businessId},
+        #{nickName},
+        #{mobile},
+        <if test="gender != null">
+            #{gender},
+        </if>
+        #{createdAt}
+        <if test="description != null">
+            ,#{description}
+        </if>
+        );
+    </insert>
+
+    <update id="update">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            nick_name = #{nickName},
+            mobile = #{mobile},
+            gender = #{gender},
+            <if test="description != null">
+                description = #{description},
+            </if>
+            updated_at = now()
+        </set>
+        WHERE business_id = #{businessId}
+        AND id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+    <select id="list" resultMap="customerDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        <if test="keyword != null">
+            AND mobile like CONCAT('%', #{keyword}, '%')
+        </if>
+        AND deleted_at = '1970-01-01 08:00:00'
+        ORDER BY `${orderBy}` ${order}
+        LIMIT #{offset},#{pageSize}
+        ;
+    </select>
+
+    <select id="getCount" resultType="java.lang.Long">
+        SELECT
+        COUNT(1)
+        FROM
+        <include refid="table"/>
+        where business_id = #{businessId}
+        <if test="includeDeleted == 0">
+            AND deleted_at = '1970-01-01 08:00:00'
+        </if>
+        LIMIT 1;
+    </select>
+
+    <update id="delete">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            deleted_at = now(),
+        </set>
+        WHERE business_id = #{businessId}
+        AND id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+    <select id="getBatch" resultMap="customerDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND id IN
+        <foreach item="item" index="index" collection="customerIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+    <!--<select id="get" resultMap="customerDO">-->
+    <!--SELECT-->
+    <!--<include refid="column"/>-->
+    <!--FROM-->
+    <!--<include refid="table"/>-->
+    <!--WHERE business_id = #{businessId}-->
+    <!--AND id = #{customerId}-->
+    <!--AND deleted_at = '1970-01-01 08:00:00'-->
+    <!--limit 1;-->
+    <!--</select>-->
+
+    <select id="getTags" resultMap="customerDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        ORDER BY created_at DESC
+        limit 1000;
+    </select>
+
+    <select id="getByName" resultMap="customerDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND nick_name = #{name}
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+    <select id="getByNameBatch" resultMap="customerDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND nick_name IN
+        <foreach item="item" index="index" collection="names" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+
+    <update id="plusCustomerNum">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            customer_num = customer_num + #{plus},
+        </set>
+        WHERE business_id = #{businessId}
+        AND id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+    <update id="subtractCustomerNum">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            customer_num = customer_num - #{subtract},
+        </set>
+        WHERE business_id = #{businessId}
+        AND id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+    <update id="updateIsAuto">
+        update
+        <include refid="table"/>
+        <set>
+            <if test="isAuto != null">
+                is_auto = #{isAuto}
+            </if>
+        </set>
+        where business_id = #{businessId}
+        and id = #{customerId}
+        and deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+</mapper>

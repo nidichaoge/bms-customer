@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.mouse.bms.customer.dal.dao.Customer2TagDAO">
+    <sql id="table">
+        bms_customer_to_tag
+    </sql>
+
+    <sql id="column">
+        id, business_id, customer_id, tag_id, is_auto_tagged, tag_source, created_at, deleted_at
+    </sql>
+
+    <resultMap id="customer2TagDO" type="com.mouse.bms.customer.dal.dataobject.Customer2TagDO">
+        <result column="id" property="id"/>
+        <result column="business_id" property="businessId"/>
+        <result column="tag_id" property="tagId"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="is_auto_tagged" property="autoTagged"/>
+        <result column="tag_source" property="tagSource"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="deleted_at" property="deletedAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.mouse.bms.customer.dal.dataobject.Customer2TagDO" useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT IGNORE INTO
+        <include refid="table"/>
+        (
+        business_id, customer_id, tag_id,
+        <if test="autoTagged != null">
+            is_auto_tagged,
+        </if>
+        tag_source, created_at
+        )
+        VALUES (
+        #{businessId},
+        #{customerId},
+        #{tagId},
+        <if test="autoTagged != null">
+            #{autoTagged},
+        </if>
+        #{tagSource},
+        #{createdAt}
+        );
+    </insert>
+
+    <update id="removeTagBatch">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            deleted_at = now(),
+        </set>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND tag_id IN
+        <foreach item="item" index="index" collection="tagIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND deleted_at = '1970-01-01 08:00:00';
+    </update>
+
+
+    <update id="updateSourceBusinessSideId">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            source_business_side_id = #{sourceBusinessSideId},
+        </set>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND tag_id = #{tagId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1
+        ;
+    </update>
+
+    <select id="getCustomerTagIds" resultMap="customer2TagDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+    <select id="getBatch" resultMap="customer2TagDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND tag_id IN
+        <foreach item="item" index="index" collection="tagIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+    <select id="get" resultMap="customer2TagDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND tag_id = #{tagId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+    <!--<insert id="add" useGeneratedKeys="true" keyProperty="id">-->
+    <!--INSERT IGNORE INTO-->
+    <!--<include refid="table"/>-->
+    <!--(-->
+    <!--business_id, customer_id, tag_id, created_at, is_auto_tagged, tag_source-->
+    <!--)-->
+    <!--VALUES (-->
+    <!--#{businessId},-->
+    <!--#{customerId},-->
+    <!--#{tagId},-->
+    <!--now(),-->
+    <!--#{isAutoTagged},-->
+    <!--#{tagSource})-->
+    <!--</insert>-->
+
+    <select id="getByCustomerIdWithLock" resultMap="customer2TagDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        for update
+    </select>
+
+    <insert id="addBatch" useGeneratedKeys="true" keyProperty="id" parameterType="java.util.List">
+        insert ignore into
+        <include refid="table"/>
+        (business_id, source_business_side_id, customer_id, tag_id, is_auto_tagged, tag_source, created_at, deleted_at)
+        values
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.businessId}, #{item.sourceBusinessSideId}, #{item.customerId}, #{item.tagId},
+            #{item.isAutoTagged}, #{item.tagSource}, #{item.createdAt}, #{item.deletedAt})
+        </foreach>
+    </insert>
+</mapper>

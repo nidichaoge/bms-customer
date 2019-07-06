@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.mouse.bms.customer.dal.dao.CustomerInfoDAO">
+
+    <sql id="table">
+        bms_customer_info
+    </sql>
+
+    <sql id="column">
+        id, business_id, customer_id, area, wechat, birthday, anniversary, created_at, updated_at, deleted_at
+    </sql>
+
+    <resultMap id="customerInfoDO" type="com.mouse.bms.customer.dal.dataobject.CustomerInfoDO">
+        <result column="id" property="id"/>
+        <result column="business_id" property="businessId"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="area" property="area"/>
+        <result column="wechat" property="weChat"/>
+        <result column="birthday" property="birthday"/>
+        <result column="anniversary" property="anniversary"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="deleted_at" property="deletedAt"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.mouse.bms.customer.dal.dataobject.CustomerInfoDO" useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO
+        <include refid="table"/>
+        (
+        <if test="id > 0">
+            id,
+        </if>
+        business_id, customer_id,
+        <if test="area != null">
+            area,
+        </if>
+        <if test="weChat != null">
+            wechat,
+        </if>
+        <if test="birthday != null">
+            birthday,
+        </if>
+        <if test="anniversary != null">
+            anniversary,
+        </if>
+        created_at
+        ) VALUES (
+        <if test="id > 0">
+            #{id},
+        </if>
+        #{businessId},
+        #{customerId},
+        <if test="area != null">
+            #{area},
+        </if>
+        <if test="weChat != null">
+            #{weChat},
+        </if>
+        <if test="birthday != null">
+            #{birthday},
+        </if>
+        <if test="anniversary != null">
+            #{anniversary},
+        </if>
+        #{createdAt}
+        );
+    </insert>
+
+    <update id="delete">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            deleted_at = now(),
+        </set>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+    <update id="update">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            <if test="area != null">
+                area = #{area},
+            </if>
+            <if test="weChat != null">
+                wechat = #{weChat},
+            </if>
+            <if test="birthday != null">
+                birthday = #{birthday},
+            </if>
+            <if test="anniversary != null">
+                anniversary = #{anniversary},
+            </if>
+            updated_at = now()
+        </set>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+    <select id="get" resultMap="customerInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </select>
+
+
+
+
+
+    <select id="getCount" resultType="java.lang.Integer">
+        SELECT
+        COUNT(1)
+        FROM
+        <include refid="table"/>
+        where business_id = #{businessId}
+        <if test="includeDeleted == 0">
+            AND deleted_at = '1970-01-01 08:00:00'
+        </if>
+        <if test="isAuto != null">
+            AND is_auto =#{isAuto}
+        </if>
+        <if test="keyword != null">
+            AND name like CONCAT('%', #{keyword}, '%')
+        </if>
+        limit 1;
+    </select>
+
+    <select id="getTags" resultMap="customerInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        ORDER BY created_at DESC
+        limit 1000;
+    </select>
+
+    <select id="getBatch" resultMap="customerInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND id IN
+        <foreach item="item" index="index" collection="customerIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+    <select id="getByName" resultMap="customerInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND name = #{name}
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+    <select id="getByNameBatch" resultMap="customerInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND name IN
+        <foreach item="item" index="index" collection="names" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+    <select id="getList" resultMap="customerInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        <if test="keyword != null">
+            AND name like CONCAT('%', #{keyword}, '%')
+        </if>
+        <if test="isAuto != null">
+            AND is_auto = #{isAuto}
+        </if>
+        AND deleted_at = '1970-01-01 08:00:00'
+        ORDER BY `${orderBy}` ${order}
+        LIMIT #{offset},#{pageSize}
+        ;
+    </select>
+
+    <update id="plusCustomerNum">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            customer_num = customer_num + #{plus},
+        </set>
+        WHERE business_id = #{businessId}
+        AND id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+    <update id="subtractCustomerNum">
+        UPDATE
+        <include refid="table"/>
+        <set>
+            customer_num = customer_num - #{subtract},
+        </set>
+        WHERE business_id = #{businessId}
+        AND id = #{customerId}
+        AND deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+    <update id="updateIsAuto">
+        update
+        <include refid="table"/>
+        <set>
+            <if test="isAuto != null">
+                is_auto = #{isAuto}
+            </if>
+        </set>
+        where business_id = #{businessId}
+        and id = #{customerId}
+        and deleted_at = '1970-01-01 08:00:00'
+        LIMIT 1;
+    </update>
+
+</mapper>

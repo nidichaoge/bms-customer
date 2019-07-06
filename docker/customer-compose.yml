@@ -1,0 +1,69 @@
+#version: '2'
+#services:
+#  mysql:
+#    image: mysql:5.6
+#    ports:
+#    - 3306:3306
+#    volumes:
+#    - /data/mysql/data/data:/var/lib/mysql
+#    environment:
+#    - MYSQL_ROOT_PASSWORD:root
+#  zookeeper:
+#    image: zookeeper:3.4.13
+#    ports:
+#      - 2181:2181
+#    volumes:
+#      - /data/zookeeper/data/data:/data
+#      - /data/zookeeper/data/datalog:/datalog
+#      - /data/zookeeper/data/logs:/logs
+#  bms-customer:
+#    image: bms-customer:1.0
+#    ports:
+#    - 8080:8888
+#    links:
+#    - mysql:mysql
+#    - zookeeper:zookeeper
+
+version: '3'
+services:
+  mysql:
+    image: mysql-customer:1.0
+#    container_name: test-mysql
+    ports:
+    - 3306:3306
+    #    volumes:
+    #    - /data/mysql/data/data:/var/lib/mysql
+    environment:
+    - MYSQL_ROOT_PASSWORD:root
+#    networks:
+#      - test-networks
+  zookeeper:
+    image: zookeeper:3.4.13
+#    container_name: test-zookeeper
+    ports:
+    - 2181:2181
+  #    volumes:
+  #    - /data/zookeeper/data/data:/data
+  #    - /data/zookeeper/data/datalog:/datalog
+  #    - /data/zookeeper/data/logs:/logs
+#    networks:
+#    - test-networks
+  bms-customer:
+    depends_on:
+    - mysql
+    - zookeeper
+    image: bms-customer:1.0
+#    container_name: test-customer
+    ports:
+    - 80:8888
+#    links:
+#      - mysql
+#      - zookeeper
+#    networks:
+#      - test-networks
+#networks:
+#  test-networks:
+#    driver: bridge
+
+
+

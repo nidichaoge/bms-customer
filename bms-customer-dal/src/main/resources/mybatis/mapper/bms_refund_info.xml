@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.mouse.bms.customer.dal.dao.RefundInfoDAO">
+    <sql id="table">
+        bms_refund_info
+    </sql>
+
+    <sql id="column">
+        id, business_id, customer_id, refund_count, total_refund_amount, last_refund_at, version
+    </sql>
+
+    <resultMap id="column" type="com.mouse.bms.customer.dal.dataobject.RefundInfoDO">
+        <result column="id" property="id"/>
+        <result column="business_id" property="businessId"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="refund_count" property="refundCount"/>
+        <result column="total_refund_amount" property="totalRefundAmount"/>
+        <result column="last_refund_at" property="lastRefundAt"/>
+        <result column="version" property="version"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.mouse.bms.customer.dal.dataobject.RefundInfoDO" useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO
+        <include refid="table"/>
+        (
+        <include refid="column"/>) VALUES (
+        #{businessId}, #{customerId}, #{refundCount}, #{totalRefundAmount}, #{lastRefundAt}, #{version})
+    </insert>
+
+    <select id="get" resultMap="column">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND customer_id = #{customerId}
+        LIMIT 1;
+    </select>
+
+    <select id="select" resultMap="column">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="column"/>
+        WHERE business_id=#{businessId} AND customer_id=#{customerId} LIMIT 100
+    </select>
+
+    <select id="selectByOrderFrom" resultMap="column">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="column"/>
+        WHERE business_id=#{businessId} AND customer_id=#{customerId} LIMIT 100
+    </select>
+
+    <select id="selectByOrderFromSetOrderBizSet" resultMap="column">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="column"/>
+        WHERE business_id=#{businessId}
+        AND customer_id=#{customerId}
+        AND order_from IN
+        <foreach collection="orderFromSet" index="index" item="orderFrom" open="(" separator="," close=")">
+            #{orderFrom}
+        </foreach>
+        AND order_biz_2_scrm IN
+        <foreach collection="orderBiz2ScrmSet" index="index" item="orderBiz2Scrm" open="(" separator="," close=")">
+            #{orderBiz2Scrm}
+        </foreach>
+        LIMIT 100
+    </select>
+
+
+    <select id="listByOrderFromSetOrderBizSet" resultMap="column">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="column"/>
+        WHERE business_id=#{businessId}
+        AND customer_id IN
+        <foreach collection="customerIds" index="index" item="customerId" open="(" separator="," close=")">
+            #{customerId}
+        </foreach>
+        AND order_from IN
+        <foreach collection="orderFromSet" index="index" item="orderFrom" open="(" separator="," close=")">
+            #{orderFrom}
+        </foreach>
+        AND order_biz_2_scrm IN
+        <foreach collection="orderBiz2ScrmSet" index="index" item="orderBiz2Scrm" open="(" separator="," close=")">
+            #{orderBiz2Scrm}
+        </foreach>
+    </select>
+
+    <update id="update" parameterType="com.mouse.bms.customer.dal.dataobject.TradeInfoDO">
+        UPDATE
+        <include refid="column"/>
+        <set>
+            version = version + 1,
+            <if test="refundCount!= null">trade_count=trade_count + #{refundCount},</if>
+            <if test="totalRefundAmount!= null">total_amount=total_amount + #{totalRefundAmount},</if>
+            <if test="lastRefundAt!= null">last_trade_at=if(last_trade_at > #{lastRefundAt}, last_trade_at,
+                #{lastRefundAt})
+            </if>
+        </set>
+        WHERE business_id=#{businessId} AND customer_id=#{customerId} AND order_from=#{orderFrom} AND
+        order_biz_2_scrm=#{orderBiz2Scrm} AND version=#{version} LIMIT 1
+    </update>
+
+    <!--合并用-->
+    <insert id="insertOnUpdate" parameterType="com.mouse.bms.customer.dal.dataobject.TradeInfoDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+        <include refid="table"/>
+        (<include refid="column"/>)
+        VALUES (#{businessId}, #{customerId}, #{refundCount}, #{totalRefundAmount}, #{lastRefundAt},
+        #{orderFrom}, #{orderBiz2Scrm}, 1) ON DUPLICATE KEY UPDATE
+        <trim suffixOverrides=",">
+            <if test="refundCount!= null">trade_count=trade_count + #{refundCount},</if>
+            <if test="totalRefundAmount!= null">total_amount=total_amount + #{totalRefundAmount},</if>
+            <if test="lastRefundAt!= null">last_trade_at=if(last_trade_at > #{lastRefundAt}, last_trade_at,
+                #{lastRefundAt}),
+            </if>
+            version=version+1,
+        </trim>
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM
+        <include refid="column"/>
+        WHERE business_id=#{businessId} AND customer_id=#{customerId} AND order_from=#{orderFrom} AND
+        order_biz_2_scrm=#{orderBiz2Scrm}
+        AND version=#{version} LIMIT 1
+    </delete>
+
+    <delete id="clearAll">
+        DELETE FROM
+        <include refid="column"/>
+        WHERE business_id=#{businessId} AND customer_id=#{customerId} LIMIT 100
+    </delete>
+
+</mapper>

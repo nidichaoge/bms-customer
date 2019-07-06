@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.mouse.bms.customer.dal.dao.TradeInfoDAO">
+
+    <sql id="table">
+        bms_trade_info
+    </sql>
+
+    <sql id="column">
+        id, business_id, customer_id, trade_count, total_amount, last_trade_at, version
+    </sql>
+
+    <resultMap id="tradeInfoDO" type="com.mouse.bms.customer.dal.dataobject.TradeInfoDO">
+        <result column="id" property="id"/>
+        <result column="business_id" property="businessId"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="trade_count" property="tradeCount"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="last_trade_at" property="lastTradeAt"/>
+        <result column="version" property="version"/>
+    </resultMap>
+
+    <select id="get" resultMap="tradeInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id=#{businessId}
+        AND customer_id=#{customerId}
+        LIMIT 1;
+    </select>
+
+    <select id="getBatch" resultMap="tradeInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="table"/>
+        WHERE business_id = #{businessId}
+        AND customer_id IN
+        <foreach item="item" index="index" collection="customerIds" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND deleted_at = '1970-01-01 08:00:00'
+        ;
+    </select>
+
+
+    <insert id="insert" parameterType="com.mouse.bms.customer.dal.dataobject.TradeInfoDO" useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO
+        <include refid="table"/>
+        (
+        <include refid="column"/>) VALUES (
+        #{businessId}, #{customerId}, #{tradeCount}, #{totalAmount}, #{lastTradeAt}, #{version})
+    </insert>
+
+    <select id="select" resultMap="tradeInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="column"/>
+        WHERE organization_id=#{organizationId} AND customer_id=#{customerId} LIMIT 100
+    </select>
+
+    <select id="selectByOrderFrom" resultMap="tradeInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="column"/>
+        WHERE organization_id=#{organizationId} AND customer_id=#{customerId} AND order_from=#{orderFrom} LIMIT 100
+    </select>
+
+    <select id="selectByOrderFromSetOrderBizSet" resultMap="tradeInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="column"/>
+        WHERE organization_id=#{organizationId}
+        AND customer_id=#{customerId}
+        AND order_from IN
+        <foreach collection="orderFromSet" index="index" item="orderFrom" open="(" separator="," close=")">
+            #{orderFrom}
+        </foreach>
+        AND order_biz_2_scrm IN
+        <foreach collection="orderBiz2ScrmSet" index="index" item="orderBiz2Scrm" open="(" separator="," close=")">
+            #{orderBiz2Scrm}
+        </foreach>
+        LIMIT 100
+    </select>
+
+
+    <select id="listByOrderFromSetOrderBizSet" resultMap="tradeInfoDO">
+        SELECT
+        <include refid="column"/>
+        FROM
+        <include refid="column"/>
+        WHERE organization_id=#{organizationId}
+        AND customer_id IN
+        <foreach collection="customerIds" index="index" item="customerId" open="(" separator="," close=")">
+            #{customerId}
+        </foreach>
+        AND order_from IN
+        <foreach collection="orderFromSet" index="index" item="orderFrom" open="(" separator="," close=")">
+            #{orderFrom}
+        </foreach>
+        AND order_biz_2_scrm IN
+        <foreach collection="orderBiz2ScrmSet" index="index" item="orderBiz2Scrm" open="(" separator="," close=")">
+            #{orderBiz2Scrm}
+        </foreach>
+    </select>
+
+    <update id="update" parameterType="com.mouse.bms.customer.dal.dataobject.TradeInfoDO">
+        UPDATE
+        <include refid="column"/>
+        <set>
+            version = version + 1,
+            <if test="tradeCount!= null">trade_count=trade_count + #{tradeCount},</if>
+            <if test="totalAmount!= null">total_amount=total_amount + #{totalAmount},</if>
+            <if test="lastTradeAt!= null">last_trade_at=if(last_trade_at > #{lastTradeAt}, last_trade_at,
+                #{lastTradeAt})
+            </if>
+        </set>
+        WHERE organization_id=#{organizationId} AND customer_id=#{customerId} AND order_from=#{orderFrom} AND
+        order_biz_2_scrm=#{orderBiz2Scrm} AND version=#{version} LIMIT 1
+    </update>
+
+    <!--合并用-->
+    <insert id="insertOnUpdate" parameterType="com.mouse.bms.customer.dal.dataobject.TradeInfoDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO
+        <include refid="table"/>
+        (<include refid="column"/>)
+        VALUES (#{organizationId}, #{customerId}, #{tradeCount}, #{totalAmount}, #{lastTradeAt},
+        #{orderFrom}, #{orderBiz2Scrm}, 1) ON DUPLICATE KEY UPDATE
+        <trim suffixOverrides=",">
+            <if test="tradeCount!= null">trade_count=trade_count + #{tradeCount},</if>
+            <if test="totalAmount!= null">total_amount=total_amount + #{totalAmount},</if>
+            <if test="lastTradeAt!= null">last_trade_at=if(last_trade_at > #{lastTradeAt}, last_trade_at,
+                #{lastTradeAt}),
+            </if>
+            version=version+1,
+        </trim>
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM
+        <include refid="column"/>
+        WHERE organization_id=#{organizationId} AND customer_id=#{customerId} AND order_from=#{orderFrom} AND
+        order_biz_2_scrm=#{orderBiz2Scrm}
+        AND version=#{version} LIMIT 1
+    </delete>
+
+    <delete id="clearAll">
+        DELETE FROM
+        <include refid="column"/>
+        WHERE organization_id=#{organizationId} AND customer_id=#{customerId} LIMIT 100
+    </delete>
+
+</mapper>
